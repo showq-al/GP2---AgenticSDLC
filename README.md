@@ -1,1 +1,1 @@
-# GP2---AgenticSDLC
+# GP2-AgenticSDLC

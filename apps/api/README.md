@@ -38,43 +38,6 @@ cp .env.example .env
 
 ### 4. Set Up MongoDB
 
-#### Option A: Local MongoDB (Recommended for Development)
-
-1. Install MongoDB Community Edition:
-   - **macOS**: `brew install mongodb-community`
-   - **Windows**: Download from https://www.mongodb.com/try/download/community
-   - **Linux**: Follow https://www.mongodb.com/docs/manual/administration/install-on-linux/
-
-2. Start MongoDB:
-   ```bash
-   # macOS
-   brew services start mongodb-community
-   
-   # Linux
-   sudo systemctl start mongod
-   
-   # Windows - it runs as a service automatically
-   ```
-
-3. Your `.env` should have:
-   ```
-   MONGODB_URI=mongodb://localhost:27017
-   MONGODB_DB_NAME=sdlc_agents
-   ```
-
-#### Option B: MongoDB Atlas (Cloud - Free Tier Available)
-
-1. Go to https://www.mongodb.com/atlas
-2. Create a free account
-3. Create a new cluster (free tier M0)
-4. Click "Connect" → "Connect your application"
-5. Copy the connection string
-6. Update `.env`:
-   ```
-   MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net
-   MONGODB_DB_NAME=sdlc_agents
-   ```
-
 ### 5. Run the Application
 
 ```bash

@@ -9,7 +9,14 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log({ projectTitle, projectDescription })
+    
+    if (!projectTitle || !projectDescription) {
+      alert('Please fill in both fields')
+      return
+    }
+    
+    // Navigate to chat page
+    window.location.href = `/dashboard/chat?name=${encodeURIComponent(projectTitle)}&description=${encodeURIComponent(projectDescription)}`
   }
 
   return (
@@ -31,14 +38,15 @@ export default function Home() {
         <div className="w-full max-w-3xl space-y-12">
           {/* Logo and Title - centered */}
           <div className="text-center space-y-3">
-            <div className="flex items-center justify-center space-x-3 mb-2">
-              <svg width="40" height="40" viewBox="0 0 48 48" fill="none" className="text-purple-500">
-                <path d="M24 12C17.4 12 12 17.4 12 24C12 30.6 17.4 36 24 36C30.6 36 36 30.6 36 24C36 17.4 30.6 12 24 12Z" stroke="currentColor" strokeWidth="2"/>
-                <circle cx="18" cy="24" r="3" fill="currentColor"/>
-                <circle cx="30" cy="24" r="3" fill="currentColor"/>
-                <circle cx="24" cy="18" r="3" fill="currentColor"/>
-              </svg>
-              <h1 className="text-4xl font-light tracking-wide text-white">AgenticSDLC</h1>
+            <div className="flex items-center justify-center space-x-0.5 mb-2">
+              <img 
+                src="/images/AgenticSDLCLogo.png" 
+                alt="AgenticSDLC Logo" 
+                width={80} 
+                height={60}
+                className="object-contain"
+              />
+              <h1 className="text-4xl font-medium tracking-wide text-white">AgenticSDLC</h1>
             </div>
           </div>
 

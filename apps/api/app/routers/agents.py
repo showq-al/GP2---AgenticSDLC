@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from app.services.llm import LLMFactory
 from app.services.agents import RequirementAgent
 from app.models.agents import AgentInput, AgentOutput
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,10 @@ async def generate_requirements(request: GenerateSDLCRequest):
     try:
         logger.info(f"Generating requirements for project: {request.project_name}")
         
-        # Create LLM client with API key
+        # Create LLM client - API key now loaded from environment
         config = {
             "provider": "openai",
-            "api_key": "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",
+            "api_key": settings.OPENAI_API_KEY,
             "model": "gpt-4o"
         }
         

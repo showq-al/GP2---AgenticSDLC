@@ -53,6 +53,8 @@ Thumbs.db
 # Local development
 .env.local
 .env.*.local
-
 node_modules/
+
+# Next.js build output
 .next/
+apps/web/.next/

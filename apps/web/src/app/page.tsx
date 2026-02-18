@@ -1,3 +1,4 @@
+'use client'
 
 import Plasma from '../components/ui/Plasma'
 import { useState } from 'react'

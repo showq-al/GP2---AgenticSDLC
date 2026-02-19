@@ -16,7 +16,7 @@ export default function Home() {
     }
     
     // Navigate to chat page
-  window.location.href = `/dashboard/chat?name=${encodeURIComponent(projectTitle)}&description=${encodeURIComponent(projectDescription)}`
+    window.location.href = `/dashboard/chat?name=${encodeURIComponent(projectTitle)}&description=${encodeURIComponent(projectDescription)}`
   }
 
   return (

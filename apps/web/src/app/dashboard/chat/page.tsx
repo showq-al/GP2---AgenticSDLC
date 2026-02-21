@@ -88,7 +88,6 @@ export default function ChatPage() {
   
   const refineRequirements = async (userFeedback: string) => {
     try {
-      // Get original requirements from messages
       const originalRequirements = messages.find(
         msg => msg.agent === 'Requirement Analyst' && msg.status !== 'thinking'
       )?.content || ''
@@ -109,7 +108,6 @@ export default function ChatPage() {
       
       const data = await response.json()
       
-      // Update the thinking message with refined requirements
       setMessages(prev => prev.map(msg => 
         msg.status === 'thinking' && msg.agent === 'Requirement Analyst'
           ? { ...msg, content: data.content, status: 'awaiting_approval' }
@@ -132,9 +130,90 @@ export default function ChatPage() {
     }
   }
   
-  const handleApprove = () => {
+  const handleApprove = async () => {
     setShowApproval(false)
     setFeedbackEnabled(false)
+    
+    try {
+      // Get the current user from Supabase
+      const { createBrowserClient } = await import('@supabase/ssr')
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        alert('You must be logged in to save requirements')
+        return
+      }
+
+      const projectName = searchParams.get('name') || ''
+      const projectDescription = searchParams.get('description') || ''
+
+      // 1. Create project in MongoDB
+      console.log('Creating project in MongoDB...')
+      const projectResponse = await fetch(`http://localhost:8000/projects/?user_id=${encodeURIComponent(user.id)}&name=${encodeURIComponent(projectName)}&description=${encodeURIComponent(projectDescription)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (!projectResponse.ok) {
+        throw new Error('Failed to create project')
+      }
+
+      const { project_id } = await projectResponse.json()
+      console.log('✅ Project created:', project_id)
+
+      // 2. Parse and save requirements
+      const requirementsMessage = messages.find(
+        msg => msg.agent === 'Requirement Analyst' && msg.status === 'awaiting_approval'
+      )
+      
+      if (requirementsMessage) {
+        // Simple parsing - extract functional and non-functional requirements
+        const content = requirementsMessage.content
+        const functionalMatch = content.match(/Functional Requirements([\s\S]*?)(?=Non-Functional Requirements|$)/i)
+        const nonFunctionalMatch = content.match(/Non-Functional Requirements([\s\S]*?)$/i)
+        
+        const parseFRs = (text: string) => {
+          const lines = text.split('\n').filter(l => l.trim().match(/^(FR|NFR)\d+/))
+          return lines.map((line, idx) => ({
+            id: `req_${idx + 1}`,
+            description: line.trim()
+          }))
+        }
+        
+        const requirementsData = {
+          functional_requirements: functionalMatch ? parseFRs(functionalMatch[1]) : [],
+          non_functional_requirements: nonFunctionalMatch ? parseFRs(nonFunctionalMatch[1]) : []
+        }
+
+        console.log('Saving requirements...', requirementsData)
+        const saveResponse = await fetch(`http://localhost:8000/projects/${project_id}/requirements`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requirementsData)
+        })
+
+        if (!saveResponse.ok) {
+          throw new Error('Failed to save requirements')
+        }
+
+        console.log('✅ Requirements saved to MongoDB!')
+      }
+      
+    } catch (error) {
+      console.error('Error saving to MongoDB:', error)
+      alert('Failed to save requirements. Please try again.')
+    }
+    
+    // Update UI
     setMessages(prev => prev.map(msg => 
       msg.status === 'awaiting_approval' 
         ? { ...msg, status: 'complete' }
@@ -167,7 +246,6 @@ export default function ChatPage() {
     
     if (!feedback.trim() || !feedbackEnabled) return
     
-    // Add user feedback message
     setMessages(prev => [...prev, {
       role: 'user',
       content: feedback,
@@ -177,7 +255,6 @@ export default function ChatPage() {
     setFeedbackEnabled(false)
     setIsGenerating(true)
     
-    // Add thinking message
     setTimeout(() => {
       setMessages(prev => [...prev, {
         role: 'agent',
@@ -187,7 +264,6 @@ export default function ChatPage() {
         status: 'thinking'
       }])
       
-      // Call API to refine requirements
       refineRequirements(feedback)
     }, 500)
     

@@ -20,19 +20,55 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Convert to lowercase as user types
+    setEmail(e.target.value.toLowerCase());
+  };
+
   const onLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      // Normalize email to lowercase before validation
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        setMsg("Please enter a valid email address");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
         password,
       });
 
       if (error) {
-        setMsg(error.message);
+        // Check if error is due to unverified email
+        if (
+          error.message.includes("Email not confirmed") ||
+          error.message.includes("email_not_confirmed") ||
+          error.message.includes("unverified")
+        ) {
+          setMsg(
+            "Please verify your email first. Check your inbox for the verification code."
+          );
+        } else {
+          setMsg(error.message);
+        }
+        return;
+      }
+
+      // Double-check: verify the user's email is confirmed
+      if (data.user && !data.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        setMsg(
+          "Your email is not verified. Please complete email verification first."
+        );
         return;
       }
 
@@ -86,7 +122,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="Email address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 required
                 className="w-full px-4 py-2.5 bg-black/25 border border-white/10 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
               />

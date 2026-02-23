@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, type FormEvent, useEffect } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Plasma from "../../../components/ui/Plasma";
 import { supabase } from "../../../lib/supabase";
 
+type OtpType = "signup" | "recovery";
+
 export default function VerifyOTPPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "";
+
+  const email = (searchParams.get("email") || "").trim().toLowerCase();
+  const typeParam = (searchParams.get("type") || "signup").toLowerCase();
+
+  const otpType: OtpType = useMemo(() => {
+    return typeParam === "recovery" ? "recovery" : "signup";
+  }, [typeParam]);
 
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -18,15 +26,24 @@ export default function VerifyOTPPage() {
 
   useEffect(() => {
     if (!email) {
-      router.replace("/signup");
+      router.replace(otpType === "recovery" ? "/forgot-password" : "/signup");
     }
-  }, [email, router]);
+  }, [email, router, otpType]);
+
+  const title = otpType === "recovery" ? "Reset password" : "Verify your email";
+  const subtitle =
+    otpType === "recovery"
+      ? "Enter the 6-digit code we sent to your email."
+      : "Enter the 6-digit code to confirm your signup.";
+
+  const primaryLabel =
+    otpType === "recovery" ? "Verify code" : "Verify & continue";
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
 
-    if (!code || code.length < 6) {
+    if (code.length !== 6) {
       setMsg("Please enter the 6-digit verification code.");
       return;
     }
@@ -36,7 +53,7 @@ export default function VerifyOTPPage() {
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: code,
-        type: "signup",
+        type: otpType,
       });
 
       if (error) {
@@ -44,6 +61,14 @@ export default function VerifyOTPPage() {
         return;
       }
 
+      if (otpType === "recovery") {
+        // ✅ after verifyOtp(recovery), session becomes a recovery session
+        router.replace("/reset-password");
+        router.refresh();
+        return;
+      }
+
+      // signup success
       router.replace("/");
       router.refresh();
     } finally {
@@ -54,16 +79,26 @@ export default function VerifyOTPPage() {
   const handleResend = async () => {
     setMsg(null);
     setResending(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email,
-      });
 
-      if (error) {
-        setMsg(error.message);
+    try {
+      if (otpType === "signup") {
+        // ✅ resend supports signup
+        const { error } = await supabase.auth.resend({
+          type: "signup",
+          email,
+        });
+
+        if (error) setMsg(error.message);
+        else setMsg("Verification code sent! Please check your email.");
       } else {
-        setMsg("Verification code sent! Please check your email.");
+        // ✅ resend recovery OTP by re-sending signInWithOtp (NOT resetPasswordForEmail)
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { shouldCreateUser: false },
+        });
+
+        if (error) setMsg(error.message);
+        else setMsg("Reset code sent! Please check your email.");
       }
     } finally {
       setResending(false);
@@ -96,13 +131,14 @@ export default function VerifyOTPPage() {
                 AgenticSDLC
               </h1>
             </div>
-            <p className="text-sm text-gray-400">Check your inbox</p>
+            <p className="text-sm text-gray-200">{title}</p>
+            <p className="text-xs text-gray-400">{subtitle}</p>
           </div>
 
           <div className="rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 p-6 shadow-2xl">
             <form onSubmit={onSubmit} className="space-y-4">
               <p className="text-xs text-gray-400">
-                Enter the verification code we just sent to{" "}
+                Code sent to{" "}
                 <span className="text-white font-medium break-all">
                   {email}
                 </span>
@@ -110,7 +146,7 @@ export default function VerifyOTPPage() {
 
               <div className="space-y-2">
                 <label htmlFor="code" className="text-sm text-gray-300">
-                  Code
+                  6-digit code
                 </label>
                 <input
                   id="code"
@@ -136,10 +172,10 @@ export default function VerifyOTPPage() {
 
               <button
                 type="submit"
-                disabled={loading || code.length < 6}
+                disabled={loading || code.length !== 6}
                 className="w-full mt-2 rounded-lg bg-purple-600/80 py-2.5 text-white text-sm font-medium hover:bg-purple-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? "Verifying..." : "Sign up"}
+                {loading ? "Verifying..." : primaryLabel}
               </button>
 
               <div className="text-center">
@@ -154,12 +190,11 @@ export default function VerifyOTPPage() {
               </div>
 
               <div className="pt-3 text-center text-xs text-gray-300">
-                Already have an account?{" "}
                 <Link
                   href="/login"
                   className="text-purple-300 hover:text-purple-200 underline"
                 >
-                  Sign in
+                  Back to login
                 </Link>
               </div>
             </form>

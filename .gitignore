@@ -26,35 +26,29 @@ wheels/
 env/
 venv/
 ENV/
-
 # Poetry
 poetry.lock
-
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-
 # Testing
 .coverage
 htmlcov/
 .tox/
 .pytest_cache/
-
 # Logs
 *.log
-
 # OS
 .DS_Store
 Thumbs.db
-
 # Local development
 .env.local
 .env.*.local
 node_modules/
-
 # Next.js build output
 .next/
 apps/web/.next/
+.turbo/

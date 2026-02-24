@@ -157,3 +157,27 @@ Provide the complete updated requirements document with the EXACT SAME formattin
     except Exception as e:
         logger.error(f"Failed to refine requirements: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-design", response_model=AgentOutput)
+async def generate_design(request: GenerateSDLCRequest):
+    try:
+        logger.info(f"Generating design for project: {request.project_name}")
+        config = {
+            "provider": "openai",
+            "api_key": settings.OPENAI_API_KEY,
+            "model": "gpt-4o"
+        }
+        llm_client = LLMFactory.create_from_config(config)
+        from app.services.agents import DesignAgent
+        agent = DesignAgent(llm_client)
+        agent_input = AgentInput(
+            project_name=request.project_name,
+            project_description=request.project_description
+        )
+        output = agent.execute(agent_input)
+        if output.status == "failed":
+            raise HTTPException(status_code=500, detail=output.error_message)
+        return output
+    except Exception as e:
+        logger.error(f"Failed to generate design: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

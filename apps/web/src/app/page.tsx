@@ -1,27 +1,25 @@
 'use client'
-
 import Plasma from '../components/ui/Plasma'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [projectTitle, setProjectTitle] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
+  const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!projectTitle || !projectDescription) {
       alert('Please fill in both fields')
       return
     }
-    
-    // Navigate to chat page
-    window.location.href = `/dashboard/chat?name=${encodeURIComponent(projectTitle)}&description=${encodeURIComponent(projectDescription)}`
+    // ✅ Client-side navigation — no full page reload
+    router.push(`/dashboard/chat?name=${encodeURIComponent(projectTitle)}&description=${encodeURIComponent(projectDescription)}`)
   }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
-      {/* Plasma Background - darker and more subtle */}
       <div className="absolute inset-0">
         <Plasma 
           color="#8B5CF6"
@@ -32,11 +30,8 @@ export default function Home() {
           mouseInteractive={true}
         />
       </div>
-
-      {/* Content */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-8">
         <div className="w-full max-w-3xl space-y-12">
-          {/* Logo and Title - centered */}
           <div className="text-center space-y-3">
             <div className="flex items-center justify-center space-x-0.5 mb-2">
               <img 
@@ -49,10 +44,7 @@ export default function Home() {
               <h1 className="text-4xl font-medium tracking-wide text-white">AgenticSDLC</h1>
             </div>
           </div>
-
-          {/* Input Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Project Name Input */}
             <div>
               <input
                 type="text"
@@ -62,8 +54,6 @@ export default function Home() {
                 className="w-full px-5 py-3 bg-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
               />
             </div>
-            
-            {/* Textarea with Send Button */}
             <div className="relative">
               <textarea
                 placeholder="Ask our AI team to create a..."
@@ -72,7 +62,6 @@ export default function Home() {
                 rows={4}
                 className="w-full px-5 py-3 pr-14 bg-gray-900/40 backdrop-blur-sm border border-gray-700/50 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition resize-none"
               />
-              {/* Send Button - positioned inside textarea */}
               <button
                 type="submit"
                 className="absolute right-3 bottom-3 p-2 bg-purple-600/80 hover:bg-purple-600 rounded-md transition duration-200 group"
@@ -83,8 +72,6 @@ export default function Home() {
               </button>
             </div>
           </form>
-
-          {/* Footer Text */}
           <p className="text-center text-xs text-gray-500">
             AgenticSDLC may produce inaccurate results. These AI responses are drafts requiring verification.
           </p>

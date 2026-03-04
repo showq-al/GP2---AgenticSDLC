@@ -95,3 +95,25 @@ async def get_project(project_id: str):
         raise HTTPException(status_code=404, detail="Project not found")
     project["_id"] = str(project["_id"])
     return project
+
+@router.put("/{project_id}/tech-stack")
+async def save_tech_stack(
+    project_id: str,
+    tech_stack: dict
+):
+    """Save tech stack recommendation for a project."""
+    db = MongoDB.get_database()
+    if not ObjectId.is_valid(project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID")
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {
+            "$set": {
+                "tech_stack": tech_stack,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {"message": "Tech stack saved successfully"}

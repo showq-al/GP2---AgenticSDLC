@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   const redirectTo = useMemo(() => {
     const r = searchParams.get("redirect");
-    return r && r.startsWith("/") ? r : "/";
+    return r && r.startsWith("/") ? r : "/dashboard/chat";
   }, [searchParams]);
 
   const [email, setEmail] = useState("");

@@ -15,6 +15,13 @@ interface Message {
     use_case_diagram?: string
     class_diagram?: string
     diagrams_count?: number
+    // Developer Agent structured data
+    frontend?: string
+    backend?: string
+    database?: string
+    external_integrations?: string
+    stack_summary?: string
+    technologies?: string[]
   }
 }
 
@@ -72,15 +79,15 @@ export default function ChatPage() {
 
   const [isReady, setIsReady] = useState(false)
 
-useEffect(() => {
-  setIsReady(true)
-}, [])
+  useEffect(() => {
+    setIsReady(true)
+  }, [])
 
-useEffect(() => {
-  if (!isReady) return
-  const projectName = searchParams.get('name')
-  const projectDescription = searchParams.get('description')
-  if (projectName && projectDescription) {
+  useEffect(() => {
+    if (!isReady) return
+    const projectName = searchParams.get('name')
+    const projectDescription = searchParams.get('description')
+    if (projectName && projectDescription) {
       setMessages([
         {
           role: 'user',
@@ -146,7 +153,6 @@ useEffect(() => {
       })
       const data = await response.json()
 
-      // ✅ FIXED: 'Design Architect'
       setMessages(prev => prev.map(msg =>
         msg.status === 'thinking' && msg.agent === 'Design Architect'
           ? { ...msg, content: data.content, status: 'complete', structured_data: data.structured_data }
@@ -166,12 +172,83 @@ useEffect(() => {
         console.log('✅ Design saved to MongoDB!')
       }
 
+      // ✅ After design is done, automatically trigger Developer Agent
+      const designContent = data.content || ''
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'agent',
+          agent: 'Developer',
+          content: 'Recommending Technology Stack',
+          timestamp: new Date(),
+          status: 'thinking'
+        }])
+        generateTechStack(name, description, requirements, designContent, projId)
+      }, 500)
+
     } catch (error) {
       console.error('Error generating design:', error)
-      // ✅ FIXED: 'Design Architect'
       setMessages(prev => prev.map(msg =>
         msg.status === 'thinking' && msg.agent === 'Design Architect'
           ? { ...msg, content: 'Failed to generate diagrams.', status: 'complete' }
+          : msg
+      ))
+      setIsGenerating(false)
+    }
+  }
+
+  // ✅ NEW: Developer Agent function
+  const generateTechStack = async (
+    name: string,
+    description: string,
+    requirements: string,
+    design: string,
+    projId: string
+  ) => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch('http://localhost:8000/agents/generate-tech-stack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: name,
+          project_description: description,
+          context: {
+            requirements: requirements,
+            design: design,
+            project_id: projId
+          }
+        })
+      })
+      const data = await response.json()
+
+      setMessages(prev => prev.map(msg =>
+        msg.status === 'thinking' && msg.agent === 'Developer'
+          ? {
+              ...msg,
+              content: data.content,
+              status: 'complete',
+              structured_data: data.structured_data
+            }
+          : msg
+      ))
+
+      // Save tech_stack to MongoDB - same pattern as design
+      if (projId) {
+        await fetch(`http://localhost:8000/projects/${projId}/tech-stack`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: data.content,
+            structured_data: data.structured_data
+          })
+        })
+        console.log('✅ Tech stack saved to MongoDB!')
+      }
+    } catch (error) {
+      console.error('Error generating tech stack:', error)
+      setMessages(prev => prev.map(msg =>
+        msg.status === 'thinking' && msg.agent === 'Developer'
+          ? { ...msg, content: 'Failed to generate technology stack.', status: 'complete' }
           : msg
       ))
     }
@@ -284,8 +361,8 @@ useEffect(() => {
     setTimeout(() => {
       setMessages(prev => [...prev, {
         role: 'agent',
-        agent: 'Design Architect',  // ✅ FIXED
-        content: 'Extracting Design',  // ✅ FIXED
+        agent: 'Design Architect',
+        content: 'Extracting Design',
         timestamp: new Date(),
         status: 'thinking'
       }])
@@ -369,11 +446,34 @@ useEffect(() => {
                             <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                           </div>
                         </div>
-                      ) : message.agent === 'Design Architect' && message.structured_data ? (  // ✅ FIXED
+                      ) : message.agent === 'Design Architect' && message.structured_data ? (
                         <div>
                           <p className="text-sm text-gray-400 mb-4">UML diagrams generated based on approved requirements.</p>
                           <PlantUMLDiagram code={message.structured_data.use_case_diagram || ''} title="Use Case Diagram" />
                           <PlantUMLDiagram code={message.structured_data.class_diagram || ''} title="Class Diagram" />
+                        </div>
+                      ) : message.agent === 'Developer' && message.structured_data?.technologies ? (
+                        // ✅ NEW: Developer Agent output display
+                        <div>
+                          <p className="text-sm text-gray-400 mb-4">
+                            Technology stack recommended based on your project requirements and design.
+                          </p>
+                          {/* Technologies badges */}
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {message.structured_data.technologies?.map((tech, i) => (
+                              <span
+                                key={i}
+                                className="px-3 py-1 bg-purple-900/50 border border-purple-700/50 text-purple-300 text-xs rounded-full"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                          {/* Full content */}
+                          <div
+                            className="whitespace-pre-wrap text-sm"
+                            dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }}
+                          />
                         </div>
                       ) : (
                         <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }} />

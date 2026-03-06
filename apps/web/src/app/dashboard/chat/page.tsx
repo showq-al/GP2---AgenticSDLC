@@ -244,11 +244,68 @@ export default function ChatPage() {
         })
         console.log('✅ Tech stack saved to MongoDB!')
       }
+
+      // Trigger Tester Agent after Developer Agent
+      const techStackContent = data.content || ''
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: 'agent',
+          agent: 'Software Tester',
+          content: 'Generating Test Strategy',
+          timestamp: new Date(),
+          status: 'thinking'
+        }])
+        generateTestStrategy(name, description, requirements, design, techStackContent, projId)
+      }, 500)
+
     } catch (error) {
       console.error('Error generating tech stack:', error)
       setMessages(prev => prev.map(msg =>
         msg.status === 'thinking' && msg.agent === 'Developer'
           ? { ...msg, content: 'Failed to generate technology stack.', status: 'complete' }
+          : msg
+      ))
+      setIsGenerating(false)
+    }
+  }
+
+  const generateTestStrategy = async (
+    name: string,
+    description: string,
+    requirements: string,
+    design: string,
+    techStack: string,
+    projId: string
+  ) => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch('http://localhost:8000/agents/generate-test-strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: name,
+          project_description: description,
+          context: {
+            requirements: requirements,
+            design: design,
+            tech_stack: techStack,
+            project_id: projId
+          }
+        })
+      })
+      const data = await response.json()
+
+      setMessages(prev => prev.map(msg =>
+        msg.status === 'thinking' && msg.agent === 'Software Tester'
+          ? { ...msg, content: data.content, status: 'complete', structured_data: data.structured_data }
+          : msg
+      ))
+      console.log('✅ Test strategy generated!')
+    } catch (error) {
+      console.error('Error generating test strategy:', error)
+      setMessages(prev => prev.map(msg =>
+        msg.status === 'thinking' && msg.agent === 'Software Tester'
+          ? { ...msg, content: 'Failed to generate test strategy.', status: 'complete' }
           : msg
       ))
     }

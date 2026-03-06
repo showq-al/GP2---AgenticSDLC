@@ -253,3 +253,76 @@ async def generate_tech_stack(request: dict):
         logger.error(f"Failed to generate tech stack: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/generate-test-strategy", response_model=AgentOutput)
+async def generate_test_strategy(request: dict):
+    """
+    Generate a comprehensive testing strategy using the Tester Agent.
+
+    Expects:
+        project_name: str
+        project_description: str
+        context: dict with keys:
+            - requirements: str  (output from RequirementAgent)
+            - design: str        (output from DesignAgent)
+            - tech_stack: str    (output from DeveloperAgent)
+            - project_id: str    (optional, for saving to DB)
+
+    Returns:
+        AgentOutput with testing strategy
+    """
+    try:
+        project_name = request.get("project_name")
+        project_description = request.get("project_description")
+        context = request.get("context", {})
+
+        logger.info(f"Generating test strategy for project: {project_name}")
+
+        config = {
+            "provider": "openai",
+            "api_key": settings.OPENAI_API_KEY,
+            "model": "gpt-4o"
+        }
+
+        llm_client = LLMFactory.create_from_config(config)
+
+        from app.services.agents.tester_agent import TesterAgent
+        agent = TesterAgent(llm_client)
+
+        agent_input = AgentInput(
+            project_name=project_name,
+            project_description=project_description,
+            context=context
+        )
+
+        output = agent.execute(agent_input)
+
+        if output.status == "failed":
+            raise HTTPException(status_code=500, detail=output.error_message)
+
+        # Save test strategy to MongoDB project document
+        if context.get("project_id"):
+            from app.services.database import MongoDB
+            from bson import ObjectId
+            db = MongoDB.get_database()
+            project_id = context["project_id"]
+            if ObjectId.is_valid(project_id):
+                await db.projects.update_one(
+                    {"_id": ObjectId(project_id)},
+                    {
+                        "$set": {
+                            "test_strategy": {
+                                "content": output.content,
+                                "structured_data": output.structured_data
+                            },
+                            "updated_at": __import__("datetime").datetime.utcnow()
+                        }
+                    }
+                )
+                logger.info(f"Test strategy saved to project {project_id}")
+
+        return output
+
+    except Exception as e:
+        logger.error(f"Failed to generate test strategy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

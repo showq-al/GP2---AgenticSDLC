@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Plasma from "../../../components/ui/Plasma";
 import { supabase } from "../../../lib/supabase";
 
@@ -48,14 +48,24 @@ function allPasswordChecksPass(checks: ReturnType<typeof getPasswordChecks>) {
   return Object.values(checks).every(Boolean);
 }
 
+function EyeIcon({ visible }: { visible: boolean }) {
+  if (visible) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      </svg>
+    );
+  }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  );
+}
+
 export default function SignUpPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const redirectTo = useMemo(() => {
-    const r = searchParams.get("redirect");
-    return r && r.startsWith("/") ? r : "/";
-  }, [searchParams]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,49 +73,33 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const nameValidation = useMemo(() => validateName(name), [name]);
-  const passwordChecks = useMemo(
-    () => getPasswordChecks(password),
-    [password]
-  );
-  const passwordValid = useMemo(
-    () => allPasswordChecksPass(passwordChecks),
-    [passwordChecks]
-  );
-  const passwordsMatch = useMemo(
-    () => password === confirmPassword && confirmPassword.length > 0,
-    [password, confirmPassword]
-  );
+  const passwordChecks = useMemo(() => getPasswordChecks(password), [password]);
+  const passwordValid = useMemo(() => allPasswordChecksPass(passwordChecks), [passwordChecks]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow letters and spaces
     if (value === "" || /^[A-Za-z\s]*$/.test(value)) {
       setName(value);
     }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Convert to lowercase as user types
     setEmail(e.target.value.toLowerCase());
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
   };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
 
-    // Validate name
     if (!nameValidation.valid) {
       setMsg(nameValidation.error || "Invalid name");
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const normalizedEmail = email.trim().toLowerCase();
     if (!emailRegex.test(normalizedEmail)) {
@@ -113,15 +107,13 @@ export default function SignUpPage() {
       return;
     }
 
-    // Validate password
     if (!passwordValid) {
       setMsg("Please meet all password requirements.");
       return;
     }
 
-    // Validate confirm password
-    if (!passwordsMatch) {
-      setMsg("Passwords do not match");
+    if (password !== confirmPassword) {
+      setMsg("Passwords do not match.");
       return;
     }
 
@@ -137,7 +129,6 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        // Log full error for debugging
         console.log("Signup error details:", {
           message: error.message,
           code: (error as any).code,
@@ -150,18 +141,14 @@ export default function SignUpPage() {
         const errorCode = ((error as any).code || "").toLowerCase();
         const statusCode = (error as any).status;
         const errorName = ((error as any).name || "").toLowerCase();
-        
-        // Check all possible indicators that email already exists
+
         const isEmailExistsError =
-          // Error codes
           errorCode === "user_already_exists" ||
           errorCode === "email_already_registered" ||
           errorCode === "signup_disabled" ||
           errorName === "authuseralreadyregistered" ||
-          // Status codes
           statusCode === 422 ||
           statusCode === 400 ||
-          // Error messages (comprehensive)
           /already.*registered/i.test(errorMessage) ||
           /already.*exists/i.test(errorMessage) ||
           /user.*already/i.test(errorMessage) ||
@@ -175,33 +162,26 @@ export default function SignUpPage() {
         if (isEmailExistsError) {
           setMsg("This email is already registered. Please sign in instead.");
         } else {
-          // Show the actual error message so we can debug
           setMsg(error.message);
         }
         return;
       }
-      
-      // Supabase returns an existing user with empty identities array when email is already registered
+
       if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
         setMsg("This email is already registered. Please sign in instead.");
         return;
       }
 
-      // Check if user already exists and is verified
       if (data?.user?.email_confirmed_at) {
         setMsg("This email is already registered and verified. Please sign in instead.");
         return;
       }
 
-      // Success: redirect to verification (handles both new signups and unverified existing emails)
       router.replace(`/verify-otp?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (err: any) {
-      // Catch any unexpected errors
       console.log("Signup exception:", err);
       const errorMessage = (err?.message || String(err) || "").toLowerCase();
-      if (
-        /already.*registered|already exists|user.*exists|email.*taken/i.test(errorMessage)
-      ) {
+      if (/already.*registered|already exists|user.*exists|email.*taken/i.test(errorMessage)) {
         setMsg("This email is already registered. Please sign in instead.");
       } else {
         setMsg(err?.message || "An error occurred. Please try again.");
@@ -269,77 +249,65 @@ export default function SignUpPage() {
               />
 
               <div className="space-y-2">
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  required
-                  autoComplete="new-password"
-                  className="w-full px-4 py-2.5 bg-black/25 border border-white/10 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
-                />
-                <ul className="text-xs text-gray-400 space-y-1">
-                  <li
-                    className={
-                      passwordChecks.minLength ? "text-emerald-400/90" : ""
-                    }
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    className="w-full px-4 py-2.5 pr-10 bg-black/25 border border-white/10 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition"
+                    tabIndex={-1}
                   >
+                    <EyeIcon visible={showPassword} />
+                  </button>
+                </div>
+                <ul className="text-xs text-gray-400 space-y-1">
+                  <li className={passwordChecks.minLength ? "text-emerald-400/90" : ""}>
                     {passwordChecks.minLength ? "✓" : "○"} 8 characters or more
                   </li>
-                  <li
-                    className={
-                      passwordChecks.hasUppercase ? "text-emerald-400/90" : ""
-                    }
-                  >
-                    {passwordChecks.hasUppercase ? "✓" : "○"} One uppercase
-                    letter
+                  <li className={passwordChecks.hasUppercase ? "text-emerald-400/90" : ""}>
+                    {passwordChecks.hasUppercase ? "✓" : "○"} One uppercase letter
                   </li>
-                  <li
-                    className={
-                      passwordChecks.hasLowercase ? "text-emerald-400/90" : ""
-                    }
-                  >
-                    {passwordChecks.hasLowercase ? "✓" : "○"} One lowercase
-                    letter
+                  <li className={passwordChecks.hasLowercase ? "text-emerald-400/90" : ""}>
+                    {passwordChecks.hasLowercase ? "✓" : "○"} One lowercase letter
                   </li>
-                  <li
-                    className={
-                      passwordChecks.hasNumber ? "text-emerald-400/90" : ""
-                    }
-                  >
+                  <li className={passwordChecks.hasNumber ? "text-emerald-400/90" : ""}>
                     {passwordChecks.hasNumber ? "✓" : "○"} One number
                   </li>
-                  <li
-                    className={
-                      passwordChecks.hasSpecial ? "text-emerald-400/90" : ""
-                    }
-                  >
-                    {passwordChecks.hasSpecial ? "✓" : "○"} One special
-                    character (!@#$%^&* etc.)
+                  <li className={passwordChecks.hasSpecial ? "text-emerald-400/90" : ""}>
+                    {passwordChecks.hasSpecial ? "✓" : "○"} One special character (!@#$%^&* etc.)
                   </li>
-                  <li
-                    className={
-                      passwordChecks.noSpaces ? "text-emerald-400/90" : ""
-                    }
-                  >
+                  <li className={passwordChecks.noSpaces ? "text-emerald-400/90" : ""}>
                     {passwordChecks.noSpaces ? "✓" : "○"} No spaces allowed
                   </li>
                 </ul>
               </div>
 
-              <div className="space-y-2">
+              <div className="relative">
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 bg-black/25 border border-white/10 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
+                  className="w-full px-4 py-2.5 pr-10 bg-black/25 border border-white/10 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/50 transition"
                 />
-                {confirmPassword.length > 0 && !passwordsMatch && (
-                  <p className="text-xs text-red-400">Passwords do not match</p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition"
+                  tabIndex={-1}
+                >
+                  <EyeIcon visible={showConfirmPassword} />
+                </button>
               </div>
 
               {msg && (
@@ -350,12 +318,7 @@ export default function SignUpPage() {
 
               <button
                 type="submit"
-                disabled={
-                  loading ||
-                  !nameValidation.valid ||
-                  !passwordValid ||
-                  !passwordsMatch
-                }
+                disabled={loading}
                 className="w-full mt-2 rounded-lg bg-purple-600/80 py-2.5 text-white text-sm font-medium hover:bg-purple-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? "Creating account..." : "Sign up"}

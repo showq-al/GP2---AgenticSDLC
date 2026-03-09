@@ -1,33 +1,66 @@
 'use client'
 
-import { ReactNode, useState } from 'react'
-import LeftRail from '@/components/layout/LeftRail'
+import { ReactNode, useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import ProfileMenu from '@/components/layout/ProfileMenu'
+import { supabase } from '@/lib/supabase'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [userName, setUserName] = useState('User')
+  const [userEmail, setUserEmail] = useState('')
+  const [userAvatar, setUserAvatar] = useState('')
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data, error } = await supabase.auth.getUser()
+
+      if (error || !data.user) return
+
+      const user = data.user
+
+      const displayName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split('@')[0] ||
+        'User'
+
+      setUserName(displayName)
+      setUserEmail(user.email || '')
+      setUserAvatar(user.user_metadata?.avatar_url || '')
+    }
+
+    loadUser()
+  }, [])
 
   const handleNewChat = () => {
-    // Temporary "new chat" behavior:
-    // just go to dashboard root. Later we will clear chat store.
-    window.location.href = '/dashboard/chat'
+    window.location.href = '/'
   }
 
   return (
     <div className="flex min-h-screen bg-black">
-      <LeftRail
+      <Sidebar
+        isOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         onNewChat={handleNewChat}
         onOpenProfile={() => setProfileOpen(true)}
+        userName={userName}
       />
 
-      {sidebarOpen && <Sidebar />}
+      <main className="flex-1 min-w-0">{children}</main>
 
-      <main className="flex-1">{children}</main>
-
-      <ProfileMenu open={profileOpen} onOpenChange={setProfileOpen} />
+      <ProfileMenu
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        userName={userName}
+        userEmail={userEmail}
+        userAvatar={userAvatar}
+        onProfileUpdated={({ name, avatarUrl }) => {
+          setUserName(name)
+          setUserAvatar(avatarUrl)
+        }}
+      />
     </div>
   )
 }

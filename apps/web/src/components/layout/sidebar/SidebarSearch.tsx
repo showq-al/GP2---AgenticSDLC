@@ -2,14 +2,23 @@
 
 export default function SidebarSearch() {
   return (
-    <div className="space-y-2">
-      <div className="text-xs font-semibold tracking-wide text-white/50">
-        Search chats
-      </div>
-      <input
-        className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none placeholder:text-white/40 focus:border-white/20"
-        placeholder="Search chats..."
-      />
-    </div>
+    <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-white/90 transition hover:bg-white/5">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6 shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.8}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z"
+        />
+      </svg>
+
+      <span className="text-[15px]">Search chats</span>
+    </button>
   )
 }

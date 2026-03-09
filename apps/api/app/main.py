@@ -12,6 +12,7 @@ import logging
 from app.config import settings
 from app.services.database import MongoDB
 from app.routers import health_router
+from app.routers.users import router as users_router
 
 # Configure logging
 logging.basicConfig(
@@ -75,6 +76,8 @@ app.include_router(health_router)
 # Import and include projects router
 from app.routers.projects import router as projects_router
 app.include_router(projects_router)
+
+app.include_router(users_router) 
 
 # Import and include agents router if it exists
 try:

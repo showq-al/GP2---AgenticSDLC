@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import Plasma from '../../../components/ui/Plasma'
+//import Plasma from '../../../components/ui/Plasma'
 import { useSearchParams } from 'next/navigation'
 
 const plantumlEncoder = require('plantuml-encoder')
@@ -552,7 +552,7 @@ export default function ChatPage() {
         </div>
 
         {/* Fixed Bottom */}
-        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-6">
+        <div className="fixed bottom-0 left-[21.5rem] right-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-6">
           <div className="max-w-4xl mx-auto px-6">
             <form onSubmit={handleSendFeedback} className="mb-4">
               <div className={`relative bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg ${!feedbackEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}>

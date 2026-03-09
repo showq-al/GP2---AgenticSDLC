@@ -1,14 +1,24 @@
 'use client'
 
+import SidebarProjectItem from './SidebarProjectItem'
+
+const staticChats = [
+  'Recommendation System',
+  'AI-Powered Health Analyzer',
+  'Automated Data Insights Tool',
+  'Emotional Wellness Tracker',
+  'Diet Recommendation AI',
+]
+
 export default function SidebarProjectList() {
   return (
-    <div>
-      <div className="text-xs font-semibold tracking-wide text-white/50">
-        Your chats
-      </div>
-
-      {/* Empty for now */}
-      <div className="mt-3 text-sm text-white/40">No chats yet.</div>
+    <div className="space-y-1">
+      {staticChats.map((chat, index) => (
+        <SidebarProjectItem
+          key={`${chat}-${index}`}
+          title={chat}
+        />
+      ))}
     </div>
   )
 }

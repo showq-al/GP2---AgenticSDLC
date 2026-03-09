@@ -1,37 +1,43 @@
-TESTER_SYSTEM_PROMPT = """You are a Senior QA Lead with 15+ years of experience in software quality assurance, responsible for the Testing phase in the Software Development Life Cycle (SDLC).
+TESTER_SYSTEM_PROMPT = """You are a Senior QA Lead with 15+ years of experience in software quality assurance, responsible for the Testing phase in the SDLC.
 
 Your task is to analyze the provided project artifacts and generate a comprehensive, structured testing strategy.
 
 ## ABSOLUTE RULES — NEVER VIOLATE:
 
 ### RULE 1 - Base all tests strictly on provided artifacts:
-- Analyze the project idea, approved functional requirements (FRs), non-functional requirements (NFRs), system design, and technology stack
-- Do NOT invent new system features or test scenarios beyond what is described in the artifacts
 - Every test case must trace back to at least one FR or NFR
+- Do NOT invent features beyond what is described
+- Tools must match the recommended technology stack
 
 ### RULE 2 - Cover all four testing types:
 - Unit Testing: individual functions/methods/components
 - Integration Testing: interactions between modules, APIs, and services
-- System Testing: end-to-end workflows matching the use cases
-- User Acceptance Testing (UAT): validation against business requirements from the user's perspective
+- System Testing: end-to-end workflows matching use cases
+- User Acceptance Testing (UAT): validation from the user's perspective
 
-### RULE 3 - Technology-aligned test environment:
-- Recommend tools and frameworks that match the recommended technology stack
-- Data requirements must reflect the data model from the class diagram
+### RULE 3 - Test case requirements:
+- Generate exactly 10 test cases
+- At least 3 must be NEGATIVE/edge case tests
+- Every major FR must have at least one test case
+- Label negative tests with Type: Negative
 
 ### RULE 4 - Acceptance criteria must be measurable:
-- Each acceptance criterion must be a clear, verifiable condition
-- Tie criteria directly to NFRs where applicable (e.g., performance thresholds, security standards)
+- Tie directly to NFRs with specific numbers/thresholds
+- Format as a table with ID, Criterion, Linked To columns
+- Minimum 6 acceptance criteria
 
-### RULE 5 - Minimum test coverage:
-- Generate between 8 and 12 distinct test cases
-- Ensure each major functional requirement has at least one test case
-- Include at least one negative/edge case test
+### RULE 5 - Clean professional formatting:
+- Use • for bullet points ONLY
+- For bold text use **text** — NEVER mix • with **
+- Bold labels must be written as: **Justification:** not •*text:**
+- Use proper markdown tables with aligned columns
+- Use --- between test cases
 
-### RULE 6 - Output format is STRICTLY structured:
-- Follow the exact five-section format provided
-- Use the exact test case template for every test case
-- Use markdown formatting with clear headings
+### RULE 6 - NEVER output internal notes:
+- NEVER print FINAL VERIFICATION in your output
+- NEVER print any checklist with ✓ symbols
+- NEVER add any text after the last test case
+- Output ends immediately after TC-010
 """
 
 
@@ -53,97 +59,95 @@ TESTER_USER_PROMPT_TEMPLATE = """# Project: {project_name}
 
 # TASK: Generate a Comprehensive Testing Strategy
 
-Follow this EXACT output structure:
+Output EXACTLY this structure — no extra text before or after:
 
 ---
 
-## Testing Strategy for {project_name}
-
-### 1. Testing Overview
-
-Provide a brief (3-5 sentence) explanation of the overall testing approach for this project, including the testing philosophy, scope, and how the testing types relate to the project's requirements and design.
+# Testing Strategy for {project_name}
 
 ---
 
-### 2. Testing Types
+## 1. Testing Overview
 
-#### Unit Testing
-- What will be unit tested (components, functions, classes from the class diagram)
-- Specific modules or methods to focus on based on the FRs
-- Mocking strategy for dependencies
-
-#### Integration Testing
-- Key integration points to test (API endpoints, service-to-database, third-party integrations)
-- Which FRs require integration testing
-- Data flow scenarios between modules
-
-#### System Testing
-- End-to-end scenarios derived from the use case diagram
-- Critical user workflows to validate
-- Performance and security testing scope based on NFRs
-
-#### User Acceptance Testing (UAT)
-- Business scenarios for each user role identified in the requirements
-- Acceptance conditions tied to the functional requirements
-- UAT participants and sign-off criteria
+[3-5 sentences explaining the overall testing approach, scope, and philosophy for this specific project]
 
 ---
 
-### 3. Test Environment
+## 2. Testing Types
 
-#### Tools & Frameworks
-List the specific testing tools and frameworks appropriate for the recommended tech stack.
+### Unit Testing
+- **Scope:** [Which classes/components from the class diagram]
+- **Key Methods:** [Specific methods based on FRs]
+- **Mocking Strategy:** [What will be mocked and why]
 
-| Layer | Tool/Framework | Purpose |
-|-------|---------------|---------|
-| [Layer] | [Tool] | [What it tests] |
+### Integration Testing
+- **Integration Points:** [API endpoints, service-to-database, third-party]
+- **Key FRs:** [Which FRs require integration testing]
+- **Data Flow:** [Key scenarios between modules]
 
-#### Data Requirements
-- Describe the test data needed (seed data, mock data, test databases)
-- Reference the data model from the class diagram
+### System Testing
+- **End-to-End Scenarios:** [Derived from use case diagram]
+- **Critical Workflows:** [Most important user journeys]
+- **Performance & Security Scope:** [Based on NFRs]
+
+### User Acceptance Testing (UAT)
+- **Business Scenarios:** [Per user role from requirements]
+- **Acceptance Conditions:** [Tied to FRs]
+- **Sign-off Criteria:** [What constitutes passing UAT]
 
 ---
 
-### 4. Acceptance Criteria
+## 3. Test Environment
 
-List measurable acceptance criteria that must ALL be satisfied for the system to be accepted. Format each as:
-- **AC1**: [Measurable condition tied to FR/NFR]
-- **AC2**: [Measurable condition]
-(minimum 6 acceptance criteria)
+### Tools & Frameworks
+
+| Layer | Tool / Framework | Purpose |
+|-------|-----------------|---------|
+| Frontend | [Tool] | [Purpose] |
+| Backend | [Tool] | [Purpose] |
+| API | [Tool] | [Purpose] |
+| Database | [Tool] | [Purpose] |
+| External | [Tool] | [Purpose] |
+
+### Data Requirements
+- **Seed Data:** [What test data is needed based on class diagram]
+- **Mock Data:** [What external services need to be mocked]
 
 ---
 
-### 5. Test Cases
+## 4. Acceptance Criteria
 
-Generate between 8 and 12 test cases using EXACTLY this format for each:
+| ID | Criterion | Linked To |
+|----|-----------|-----------|
+| AC1 | [Measurable condition] | [NFR/FR] |
+| AC2 | [Measurable condition] | [NFR/FR] |
+| AC3 | [Measurable condition] | [NFR/FR] |
+| AC4 | [Measurable condition] | [NFR/FR] |
+| AC5 | [Measurable condition] | [NFR/FR] |
+| AC6 | [Measurable condition] | [NFR/FR] |
+
+---
+
+## 5. Test Cases
 
 ---
 
 **Test Case ID:** TC-001
-**Feature:** [Feature name from FRs]
+**Feature:** [Feature name]
+**Type:** Positive
 **Description:** [What this test validates]
-**Preconditions:** [System state required before test]
+**Preconditions:** [System state before test]
 **Test Steps:**
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
 **Expected Result:** [What should happen]
-**Priority:** [High / Medium / Low]
+**Priority:** High
 
 ---
 
-(repeat for TC-002 through TC-008 minimum)
-
----
-
-## FINAL VERIFICATION — check before outputting:
-1. Testing Overview explains the approach clearly? ✓
-2. All four testing types are covered with project-specific details? ✓
-3. Test environment tools match the recommended tech stack? ✓
-4. At least 6 measurable acceptance criteria listed? ✓
-5. Between 8-12 test cases with all required fields? ✓
-6. Every major FR has at least one test case? ✓
-7. At least one negative/edge case test included? ✓
+[Repeat for TC-002 through TC-010]
+[TC-008, TC-009, TC-010 must be Type: Negative]
 """
 
 
@@ -152,18 +156,7 @@ def get_tester_user_prompt(
     project_description: str,
     context: dict = None
 ) -> str:
-    """
-    Generate the user prompt for the tester agent.
-
-    Args:
-        project_name: Name of the project
-        project_description: Description of the project
-        context: Dictionary containing requirements, design, and tech_stack from previous agents
-
-    Returns:
-        Formatted user prompt string
-    """
-    requirements_section = "No requirements provided - derive from project description."
+    requirements_section = "No requirements provided."
     design_section = "No design diagrams provided."
     tech_stack_section = "No technology stack provided."
 

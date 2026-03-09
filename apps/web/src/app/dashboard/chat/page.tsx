@@ -455,19 +455,17 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black">
-      <div className="absolute inset-0 bg-black" />
-      <div className="relative z-10 flex min-h-screen flex-col">
+    <div className="flex flex-col h-screen w-full bg-black overflow-hidden">
         {/* Header */}
         <div className="border-b border-gray-800 bg-black/50 backdrop-blur-sm p-4">
           <div className="flex items-center space-x-2">
-            <img src="/images/AgenticSDLCLogo.png" alt="Logo" width={32} height={32} className="object-contain" />
+            
             <h1 className="text-xl font-medium text-white">AgenticSDLC</h1>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 pb-32" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex-1 overflow-y-auto p-6 pb-4">
           <div className="max-w-4xl mx-auto space-y-6">
             {messages.map((message, index) => (
               <div key={index} className="flex items-start space-x-3">
@@ -552,8 +550,8 @@ export default function ChatPage() {
         </div>
 
         {/* Fixed Bottom */}
-        <div className="fixed bottom-0 left-[21.5rem] right-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-6">
-          <div className="max-w-4xl mx-auto px-6">
+        <div className="bg-gradient-to-t from-black via-black/95 to-transparent pt-4 pb-6 px-6">
+        <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSendFeedback} className="mb-4">
               <div className={`relative bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-3xl overflow-hidden shadow-lg ${!feedbackEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <div className="flex items-center">
@@ -593,17 +591,83 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-    </div>
+ 
   )
 }
-
 function formatMarkdown(text: string): string {
-  return text
-    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold mt-2 mb-1 text-white">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold mt-2 mb-1 text-white">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold mb-2 text-white">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
-    .replace(/\n\n/g, '<br/>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1">• $1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 mb-1">$1. $2</li>')
+  const lines = text.split('\n')
+  let html = ''
+  let inTable = false
+  let tableRows: string[] = []
+  let pendingBullet = false
+
+  const flushTable = () => {
+    if (tableRows.length < 2) { tableRows = []; inTable = false; return }
+    const headers = tableRows[0].split('|').filter(c => c.trim()).map(c =>
+      `<th class="px-3 py-2 text-left text-xs font-semibold text-gray-300 border-b border-gray-600">${c.trim()}</th>`)
+    const rows = tableRows.slice(2).map(row => {
+      const cells = row.split('|').filter(c => c.trim()).map(c =>
+        `<td class="px-3 py-2 text-xs text-gray-300 border-b border-gray-700/50">${c.trim()}</td>`)
+      return `<tr class="hover:bg-white/5">${cells.join('')}</tr>`
+    })
+    html += `<div class="overflow-x-auto my-3"><table class="w-full border-collapse bg-gray-800/50 rounded-lg overflow-hidden"><thead><tr>${headers.join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`
+    tableRows = []; inTable = false
+  }
+
+  const applyInline = (s: string) =>
+    s.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+     .replace(/`(.+?)`/g, '<code class="bg-gray-700 px-1 rounded text-purple-300 text-xs">$1</code>')
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Table
+    if (line.trim().startsWith('|')) {
+      inTable = true; tableRows.push(line); continue
+    }
+    if (inTable) flushTable()
+
+    // Headings
+    if (line.startsWith('# '))   { html += `<h1 class="text-xl font-bold mt-4 mb-2 text-white">${applyInline(line.slice(2))}</h1>`; continue }
+    if (line.startsWith('## '))  { html += `<h2 class="text-lg font-bold mt-4 mb-2 text-purple-300">${applyInline(line.slice(3))}</h2>`; continue }
+    if (line.startsWith('### ')) { html += `<h3 class="text-base font-semibold mt-3 mb-1 text-purple-400">${applyInline(line.slice(4))}</h3>`; continue }
+    if (line.startsWith('#### ')){ html += `<h4 class="text-sm font-semibold mt-2 mb-1 text-gray-300">${applyInline(line.slice(5))}</h4>`; continue }
+
+    // HR
+    if (line.trim() === '---') { html += `<hr class="border-gray-700 my-3"/>`; continue }
+
+    // Code fence
+    if (line.trim().startsWith('```')) { continue }
+
+    // Bullet: handle "•" alone on a line (content continues on next line)
+    if (line.trim() === '•') {
+      const nextLine = lines[i + 1] || ''
+      const content = applyInline(nextLine.replace(/^\*/, '').trim())
+      html += `<div class="flex items-start space-x-2 my-1 ml-2"><span class="text-purple-400 mt-0.5 shrink-0">•</span><span class="text-gray-300 text-sm">${content}</span></div>`
+      i++ // skip next line since we consumed it
+      continue
+    }
+
+    // Bullet: "• text" or "- text" or "* text" on same line
+    if (line.match(/^[•\-\*]\s+\S/)) {
+      const content = applyInline(line.replace(/^[•\-\*]\s+/, ''))
+      html += `<div class="flex items-start space-x-2 my-1 ml-2"><span class="text-purple-400 mt-0.5 shrink-0">•</span><span class="text-gray-300 text-sm">${content}</span></div>`
+      continue
+    }
+
+    // Numbered list
+    if (line.match(/^\d+\.\s/)) {
+      html += `<div class="ml-4 my-1 text-gray-300 text-sm">${applyInline(line)}</div>`
+      continue
+    }
+
+    // Empty line
+    if (line.trim() === '') { html += `<div class="my-1"></div>`; continue }
+
+    // Normal text
+    html += `<p class="text-gray-300 text-sm my-0.5">${applyInline(line)}</p>`
+  }
+
+  if (inTable) flushTable()
+  return html
 }

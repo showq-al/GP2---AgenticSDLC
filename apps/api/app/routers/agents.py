@@ -1,4 +1,5 @@
 import logging
+import traceback
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -325,4 +326,54 @@ async def generate_test_strategy(request: dict):
 
     except Exception as e:
         logger.error(f"Failed to generate test strategy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-document", response_model=AgentOutput)
+async def generate_document(request: dict):
+    """
+    Generate the final SDLC document using Gemini.
+
+    Expects:
+        project_name: str
+        project_description: str
+        context: dict with keys:
+            - requirements
+            - design
+            - tech_stack
+            - test_strategy
+    """
+    try:
+        project_name = request.get("project_name")
+        project_description = request.get("project_description")
+        context = request.get("context", {})
+
+        logger.info(f"Generating final document for project: {project_name}")
+
+        config = {
+            "provider": "gemini",
+            "api_key": settings.GEMINI_API_KEY,
+            "model": "gemini-2.5-flash"
+        }
+
+        llm_client = LLMFactory.create_from_config(config)
+
+        from app.services.agents import DocumentAgent
+        agent = DocumentAgent(llm_client)
+
+        agent_input = AgentInput(
+            project_name=project_name,
+            project_description=project_description,
+            context=context
+        )
+
+        output = agent.execute(agent_input)
+
+        if output.status == "failed":
+            raise HTTPException(status_code=500, detail=output.error_message)
+
+        return output
+
+    except Exception as e:
+        logger.error(f"Failed to generate final document: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

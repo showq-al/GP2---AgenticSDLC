@@ -83,8 +83,8 @@ app.include_router(users_router)
 try:
     from app.routers.agents import router as agents_router
     app.include_router(agents_router)
-except ImportError:
-    logger.warning("Agents router not found, skipping...")
+except Exception as e:
+    logger.warning(f"Agents router not found, skipping... Reason: {e}")
 
 
 @app.get("/")

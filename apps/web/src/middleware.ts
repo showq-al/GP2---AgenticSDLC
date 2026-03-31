@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
 
   // Allow access to login, signup, and verify-otp without authentication
-  const publicPaths = ['/login', '/signup', '/verify-otp', '/forgot-password']
+  const publicPaths = ['/login', '/signup', '/verify-otp', '/forgot-password', '/reset-password']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
   if (!session && !isPublicPath) {

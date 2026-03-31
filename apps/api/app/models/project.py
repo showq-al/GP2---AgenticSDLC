@@ -46,6 +46,7 @@ class Project(BaseModel):
     design: Optional[Dict[str, Any]] = None
     tech_stack: Optional[Dict[str, Any]] = None
     test_strategy: Optional[Dict[str, Any]] = None
+    final_document: Optional[Dict[str, Any]] = None
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

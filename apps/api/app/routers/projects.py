@@ -28,6 +28,7 @@ async def create_project(
         "design": None,
         "tech_stack": None,
         "test_strategy": None,
+        "final_document": None,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -83,6 +84,35 @@ async def save_design(
         raise HTTPException(status_code=404, detail="Project not found")
     return {"message": "Design saved successfully"}
 
+@router.get("/completed/{user_id}")
+async def get_completed_projects(user_id: str):
+    """Return completed chats/projects for sidebar history."""
+    db = MongoDB.get_database()
+
+    projects_cursor = db.projects.find(
+        {"user_id": user_id, "status": "completed"},
+        {
+            "_id": 1,
+            "name": 1,
+            "description": 1,
+            "created_at": 1,
+            "updated_at": 1,
+            "final_document": 1
+        }
+    ).sort("updated_at", -1)
+
+    projects = []
+    async for project in projects_cursor:
+        projects.append({
+            "id": str(project["_id"]),
+            "title": project.get("name", "Untitled Project"),
+            "description": project.get("description", ""),
+            "has_final_document": bool(project.get("final_document")),
+            "created_at": project.get("created_at"),
+            "updated_at": project.get("updated_at")
+        })
+
+    return {"projects": projects}
 
 @router.get("/{project_id}")
 async def get_project(project_id: str):
@@ -117,3 +147,87 @@ async def save_tech_stack(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Project not found")
     return {"message": "Tech stack saved successfully"}
+
+#what about test strategies? we need to save them too
+@router.put("/{project_id}/test-strategy")
+async def save_test_strategy(
+    project_id: str,
+    test_strategy: dict
+):
+    """Save test strategy for a project."""
+    db = MongoDB.get_database()
+    if not ObjectId.is_valid(project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID")
+
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {
+            "$set": {
+                "test_strategy": test_strategy,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return {"message": "Test strategy saved successfully"}
+
+@router.put("/{project_id}/final-document")
+async def save_final_document(
+    project_id: str,
+    final_document: dict
+):
+    """Save final generated document for a project."""
+    db = MongoDB.get_database()
+    if not ObjectId.is_valid(project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID")
+
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {
+            "$set": {
+                "final_document": final_document,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return {"message": "Final document saved successfully"}
+
+@router.put("/{project_id}/complete")
+async def complete_project(project_id: str):
+    """Mark project as completed after final document generation."""
+    db = MongoDB.get_database()
+
+    if not ObjectId.is_valid(project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID")
+
+    result = await db.projects.update_one(
+        {"_id": ObjectId(project_id)},
+        {
+            "$set": {
+                "status": "completed",
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return {"message": "Project marked as completed"}
+
+@router.delete("/{project_id}")
+async def delete_project(project_id: str):
+    db = MongoDB.get_database()
+    if not ObjectId.is_valid(project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID")
+    result = await db.projects.delete_one({"_id": ObjectId(project_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {"message": "Project deleted successfully"}    

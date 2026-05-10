@@ -110,23 +110,32 @@ FRX. The system shall send an order confirmation email to the user after success
 
 ## Non-Functional Requirements
 
+Derive NFRs specifically from the project domain and requirements above. Do NOT copy generic values.
+For each NFR, choose values that make sense for this specific system:
+- Response times: consider whether this is a real-time, medical, e-commerce, or casual app
+- Concurrent users: consider the realistic user base size for this domain
+- Security: include only the encryption/auth standards actually relevant to this domain
+- Availability: justify the uptime based on criticality of the system
+
 ### Performance
-NFR1. The system shall respond to user interactions within 2 seconds.
-NFR2. The system shall process payments within 5 seconds.
+NFR1. The system shall respond to user interactions within [X] seconds.
+[Add payment processing NFR only if payments exist in FRs]
 
 ### Security
-NFR3. The system shall encrypt all user passwords using AES-256 encryption.
-NFR4. The system shall use HTTPS for all data transmission.
-NFR5. The system shall implement role-based access control.
+NFR2. The system shall encrypt all user passwords using [appropriate encryption].
+NFR3. The system shall use HTTPS for all data transmission.
+[Add role-based access only if multiple roles exist in FRs]
 
 ### Usability
-NFR6. The system shall provide a user-friendly interface that is intuitive and easy to navigate.
+NFRx. The system shall provide a user-friendly interface that is intuitive and easy to navigate for all user roles.
 
 ### Availability
-NFR7. The system shall have an uptime of 99.9%.
+NFRx. The system shall have an uptime of [X]% [justify based on domain criticality].
 
 ### Scalability
-NFR8. The system shall support up to [reasonable number] concurrent users without performance degradation.
+NFRx. The system shall support up to [realistic number based on this domain] concurrent users without performance degradation.
+
+[Add any domain-specific NFRs: HIPAA for healthcare, PCI-DSS for payments, FERPA for education, etc.]
 
 Provide detailed, professional requirements with compact formatting suitable for a development team.
 Make sure EVERY mandatory rule from STEP 2 is applied before finalizing."""

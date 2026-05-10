@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Header, HTTPException, status
 from supabase import create_client, Client
 from app.services.database import MongoDB
-import os
+from app.config import settings
 import jwt
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
 def get_supabase_admin() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    url = settings.SUPABASE_URL
+    service_role_key = settings.SUPABASE_SERVICE_KEY
 
     if not url or not service_role_key:
-        raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
+        raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in environment")
 
     return create_client(url, service_role_key)
 

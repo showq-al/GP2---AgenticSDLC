@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from typing import Dict, Any
 
 from app.services.llm import BaseLLMClient
@@ -11,6 +12,9 @@ from .prompts.document_prompts import (
 )
 
 logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds between retries
 
 
 class DocumentAgent(BaseAgent):
@@ -48,41 +52,57 @@ class DocumentAgent(BaseAgent):
         matches = re.findall(r"^##\s+(.+)$", text, re.MULTILINE)
         return [m.strip() for m in matches]
 
-    # ── Override execute() ONLY for the Document Agent ────────────────────
-    # BaseAgent.execute() hard-codes max_tokens=3000, which is not enough for
-    # a full 9-section IEEE document (needs 5000-8000 tokens). All other agents
-    # continue to use BaseAgent.execute() with their original 3000-token limit.
     def execute(self, agent_input: AgentInput) -> AgentOutput:
-        try:
-            self.logger.info(
-                f"Executing Document agent for project: {agent_input.project_name}"
-            )
+        last_error = None
 
-            system_prompt = self.get_system_prompt()
-            user_prompt   = self.get_user_prompt(agent_input)
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                self.logger.info(
+                    f"Executing Document agent for project: {agent_input.project_name} "
+                    f"(attempt {attempt}/{MAX_RETRIES})"
+                )
 
-            response = self.llm_client.generate_text(
-                prompt=user_prompt,
-                system_prompt=system_prompt,
-                max_tokens=8000,   # ← increased from 3000; full document needs this
-                temperature=0.3    # lower temperature = more structured, consistent output
-            )
+                system_prompt = self.get_system_prompt()
+                user_prompt   = self.get_user_prompt(agent_input)
 
-            structured_data = self.parse_response(response)
+                response = self.llm_client.generate_text(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    max_tokens=8000,
+                    temperature=0.3
+                )
 
-            self.logger.info("Document agent completed successfully")
-            return AgentOutput(
-                agent_type=self.agent_type,
-                status=AgentStatus.COMPLETED,
-                content=response,
-                structured_data=structured_data
-            )
+                structured_data = self.parse_response(response)
 
-        except Exception as e:
-            self.logger.error(f"Document agent failed: {str(e)}")
-            return AgentOutput(
-                agent_type=self.agent_type,
-                status=AgentStatus.FAILED,
-                content="",
-                error_message=str(e)
-            )
+                self.logger.info("Document agent completed successfully")
+                return AgentOutput(
+                    agent_type=self.agent_type,
+                    status=AgentStatus.COMPLETED,
+                    content=response,
+                    structured_data=structured_data
+                )
+
+            except Exception as e:
+                last_error = e
+                error_str = str(e)
+                is_retryable = any(code in error_str for code in ["503", "429", "UNAVAILABLE", "overloaded", "rate limit"])
+
+                if is_retryable and attempt < MAX_RETRIES:
+                    wait = RETRY_DELAY * attempt  # 5s, 10s, 15s
+                    self.logger.warning(
+                        f"Document agent attempt {attempt} failed (retryable): {error_str}. "
+                        f"Retrying in {wait}s..."
+                    )
+                    time.sleep(wait)
+                else:
+                    self.logger.error(
+                        f"Document agent failed after {attempt} attempt(s): {error_str}"
+                    )
+                    break
+
+        return AgentOutput(
+            agent_type=self.agent_type,
+            status=AgentStatus.FAILED,
+            content="",
+            error_message=str(last_error)
+        )

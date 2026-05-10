@@ -48,7 +48,7 @@ class GeminiClient(BaseLLMClient):
     def generate_text(
         self,
         prompt: str,
-        max_tokens: int = 2000,
+        max_tokens: int = 8000, 
         temperature: float = 0.7,
         system_prompt: Optional[str] = None
     ) -> str:
@@ -82,7 +82,7 @@ class GeminiClient(BaseLLMClient):
         self,
         prompt: str,
         schema: Dict[str, Any],
-        max_tokens: int = 2000,
+        max_tokens: int = 8000,
         temperature: float = 0.7
     ) -> Dict[str, Any]:
         if not prompt:

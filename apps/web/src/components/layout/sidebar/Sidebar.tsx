@@ -13,6 +13,7 @@ type SidebarProps = {
   onToggleSidebar: () => void
   onNewChat: () => void
   onOpenProfile: () => void
+  onOpenHelp: () => void
   onOpenChat: (chatId: string) => void
   onDeleteChat?: (chatId: string) => void
   chats: ChatHistoryItem[]
@@ -25,6 +26,7 @@ export default function Sidebar({
   onToggleSidebar,
   onNewChat,
   onOpenProfile,
+  onOpenHelp,
   onOpenChat,
   onDeleteChat,
   chats,
@@ -74,6 +76,16 @@ export default function Sidebar({
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
+            </svg>
+          </button>
+
+          <button
+            onClick={onOpenHelp}
+            className="rounded-xl p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+            aria-label="Help"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
         </div>
@@ -161,8 +173,17 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Bottom profile strip */}
-        <div className="border-t border-white/10 p-3">
+        {/* Bottom strip */}
+        <div className="border-t border-white/10 p-3 space-y-1">
+          <button
+            onClick={onOpenHelp}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/5 text-white/60 hover:text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm">Help Center</span>
+          </button>
           <button
             onClick={onOpenProfile}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-white/5"

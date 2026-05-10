@@ -116,7 +116,24 @@ If your count does not match — you are missing FRs. Find them and add them.
 - Class: `-` private, `+` public
 - Class: `class Name <<External>> <<interface>>` for external systems
 - Class: `class Name <<AI>>` for AI components
-- Class: multiplicities on ALL relationships"""
+- Class: multiplicities on ALL relationships
+
+## CRITICAL — CLASS DIAGRAM RELATIONSHIP SYNTAX:
+- FORBIDDEN: `Review "1" --> "1" User as writer : written by`  ← `as alias` is INVALID in relationships
+- FORBIDDEN: `Complaint "1" "0..1" --> "1" User : reportedAgainst`  ← TWO multiplicities before arrow
+- CORRECT:   `Review "1" --> "1" User : written by`
+- CORRECT:   `Complaint "1" --> "0..1" User : reportedAgainst`
+- NEVER use `as alias` in relationship lines — only use it when declaring actors: `actor "X" as x`
+- Relationship format MUST be: `ClassName "mult" --> "mult" ClassName : label`  (ONE mult per side)
+
+## CRITICAL — COMMENTS CAUSE SYNTAX ERRORS:
+- NEVER add a comment `'` on the same line as any PlantUML statement
+- FORBIDDEN: `(Send Password Reset Email) ' Specific for password reset`  ← BREAKS DIAGRAM
+- FORBIDDEN: `actor "User" as user  ' base actor`  ← BREAKS DIAGRAM
+- FORBIDDEN: `user --> (Login)  ' auth`  ← BREAKS DIAGRAM
+- ALLOWED: `' === AUTH USE CASES ===` — comments ONLY on their OWN standalone line
+- Use case names must be self-explanatory; never add inline clarifications with `'`
+- One statement per line, no trailing comments ever"""
 
 
 DESIGN_USER_PROMPT_TEMPLATE = """# Project: {project_name}

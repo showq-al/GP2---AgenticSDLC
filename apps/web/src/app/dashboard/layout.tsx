@@ -206,13 +206,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="flex gap-3">
               <button
                 onClick={handleAgentWarningCancel}
-                className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-white/60 transition hover:bg-white/8 hover:text-white"
+                className="flex-1 rounded-xl bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
               >
                 Stay
               </button>
               <button
                 onClick={handleAgentWarningConfirm}
-                className="flex-1 rounded-xl bg-purple-600 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700"
+                className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-white transition hover:bg-white/8"
               >
                 End & View Chat
               </button>

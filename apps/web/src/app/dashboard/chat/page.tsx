@@ -94,6 +94,7 @@ export default function ChatPage() {
     return () => window.removeEventListener('force-stop-agents', handleForceStop)
   }, [])
 
+  const [showStopSessionModal, setShowStopSessionModal] = useState(false)
   const [formError, setFormError] = useState('')
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -207,13 +208,16 @@ export default function ChatPage() {
   }
 
  const handleStop = () => {
-  if (abortControllerRef.current) {
-    abortControllerRef.current.abort()
-  }
-  setIsGenerating(false)
-  setIsChatLocked(false)
-  setMessages(prev => prev.filter(msg => msg.status !== 'thinking'))
+  setShowStopSessionModal(true)
 }
+
+  const handleStopConfirm = () => {
+    abortControllerRef.current?.abort()
+    setIsGenerating(false)
+    setIsChatLocked(false)
+    setMessages(prev => prev.filter(msg => msg.status !== 'thinking'))
+    setShowStopSessionModal(false)
+  }
 
   const handleApprove = async () => {
     setShowApproval(false); setFeedbackEnabled(false)
@@ -438,6 +442,41 @@ export default function ChatPage() {
           onSubmit={handleSendFeedback}
           onStop={handleStop}
         />
+      )}
+
+      {/* Stop confirmation modal */}
+      {showStopSessionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowStopSessionModal(false)} />
+          <div
+            className="relative z-10 w-full max-w-sm rounded-2xl p-6 shadow-2xl"
+            style={{ background: 'linear-gradient(160deg, #1a0035 0%, #0d0018 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-red-500/15">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h3 className="mb-1 text-base font-semibold text-white">Stop generating?</h3>
+            <p className="mb-6 text-sm text-white/50 leading-relaxed">
+              Are you sure you want to stop the message?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowStopSessionModal(false)}
+                className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-white/60 transition hover:bg-white/8 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStopConfirm}
+                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Stop
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
